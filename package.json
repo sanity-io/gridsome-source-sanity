@@ -1,0 +1,22 @@
+{
+  "name": "@sanity/gridsome-source-sanity",
+  "version": "0.0.1",
+  "description": "Sanity.io source for Gridsome",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@sanity/client": "^0.140.11",
+    "axios": "^0.18.0",
+    "pump": "^3.0.0",
+    "split2": "^3.1.1",
+    "through2": "^3.0.1"
+  }
+}
