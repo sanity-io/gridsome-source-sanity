@@ -3,7 +3,7 @@ const axios = require('axios')
 const pumpIt = require('pump')
 const split = require('split2')
 const through = require('through2')
-
+const GraphQLJSON = require('graphql-type-json')
 const sanityClient = require('@sanity/client')
 class SanitySource {
   static defaultOptions () {
@@ -78,13 +78,19 @@ class SanitySource {
       this.rejectOnApiError(),
       this.removeSystemDocuments(),
       through.obj((doc, enc, callback) => {
-        console.log('Got document with ID %s', doc._id)
         const { _id, _createdAt, _updatedAt, _type } = doc
         const typeName = store.makeTypeName(_type)
         const contentType = store.addContentType({
           typeName,
           // route: `${store.slugify(_type)}/:slug`
         })
+        /* contentType.addSchemaField('_rawBody', ({graphql}) =>  ({
+          type: graphql.GraphQLJSON,
+          resolve(doc) {
+            return doc.fields.body
+          }
+        })) */
+
         const collection = store.getContentType(typeName)
         const fields = {...doc}
         fields.date = _createdAt
