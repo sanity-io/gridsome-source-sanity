@@ -1,5 +1,5 @@
+/* eslint-disable no-console */
 const crypto = require('crypto')
-const {startCase} = require('lodash')
 const {valueFromASTUntyped} = require('graphql')
 const axios = require('axios')
 const pumpIt = require('pump')
@@ -8,8 +8,11 @@ const through = require('through2')
 const oneline = require('oneline')
 const sanityClient = require('@sanity/client')
 const {version} = require('../package.json')
-const getRemoteGraphQLSchema = require('./remoteGraphQLSchema')
 const resolveReferences = require('./resolveReferences')
+const handleListenerEvent = require('./handleListenerEvent')
+const getRemoteGraphQLSchema = require('./remoteGraphQLSchema')
+const {getGraphQLTypeName, normalizeTypeName} = require('./typeNames')
+const {extractDrafts, removeDrafts, unprefixDraftId} = require('./draftHandlers')
 
 const gqlScalarTypes = ['String', 'Int', 'Float', 'Boolean', 'ID']
 
@@ -20,7 +23,6 @@ class SanitySource {
       projectId: '',
       dataset: '',
       token: '',
-      useCdn: false,
       overlayDrafts: false,
       watchMode: false,
       routes: {}
@@ -29,19 +31,27 @@ class SanitySource {
 
   constructor(api, options) {
     this.options = options
-    this.store = api.store
+    this.pluginStore = api.store
     this.typesIndex = {}
 
-    const {projectId, dataset, token, useCdn} = options
+    const {projectId, dataset, token, overlayDrafts} = options
 
+    if (overlayDrafts && !token) {
+      console.warn('[sanity] `overlayDrafts` set to true, but no `token` specified!')
+    }
+
+    // We're passing these methods around to helpers, so bind them for correct scoping
     this.getUid = this.getUid.bind(this)
+    this.getCollectionForType = this.getCollectionForType.bind(this)
+    this.addDocumentToCollection = this.addDocumentToCollection.bind(this)
+
     this.uidPrefix = sha1([projectId, dataset, token].join('-'))
     this.client = sanityClient({
       apiVersion: '1',
+      useCdn: false,
       projectId,
       dataset,
-      token,
-      useCdn
+      token
     })
 
     api.loadSource(async store => {
@@ -73,6 +83,7 @@ class SanitySource {
 
   // eslint-disable-next-line class-methods-use-this
   createObjectType(graphqlType, store) {
+    const {overlayDrafts} = this.options
     const {makeTypeName, addContentType, schema} = store
     const {createObjectType} = schema
     const graphqlName = graphqlType.name.value
@@ -137,7 +148,7 @@ class SanitySource {
             }
           },
           resolve: (source, args, context) => {
-            const resolveContext = {store: context.store, getUid: this.getUid}
+            const resolveContext = {store: context.store, getUid: this.getUid, overlayDrafts}
             const value = source[jsonField.aliasFor]
             return args.resolveReferences
               ? resolveReferences(value, 0, args.resolveReferences.maxDepth, resolveContext)
@@ -188,38 +199,81 @@ class SanitySource {
 
   maybeResolveReference(item, store) {
     if (item && typeof item._ref === 'string') {
-      return store.getNodeByUid(this.etUid(item._ref))
+      return store.getNodeByUid(this.getUid(item._ref))
     }
 
     return item
   }
 
   async getDocuments(store) {
-    const {dataset, overlayDrafts, watchMode, token} = this.client.config()
+    const {getUid, addDocumentToCollection} = this
+    const {overlayDrafts, watchMode} = this.options
+    const {dataset, token} = this.client.config()
 
     const url = this.client.getUrl(`/data/export/${dataset}`)
     const inputStream = await getDocumentStream(url, token)
+
+    // Mutated by overlayed drafts handling
+    const drafts = []
+    const published = new Map()
 
     await pump([
       inputStream,
       split(JSON.parse),
       rejectOnApiError(),
+      overlayDrafts ? extractDrafts(drafts, published) : removeDrafts(),
       removeSystemDocuments(),
       this.addDocumentsToCollection(store)
     ])
+
+    if (drafts.length > 0) {
+      console.info('[sanity] Overlaying drafts')
+      drafts.forEach(draft => this.addDocumentToCollection(draft, store))
+    }
+
+    if (watchMode) {
+      console.info('[sanity] Watch mode enabled, starting a listener')
+
+      const filters = ['!(_id in path("_.**"))']
+      if (!overlayDrafts) {
+        filters.push('!(_id in path("drafts.**"))')
+      }
+
+      const docs = {drafts, published}
+      const {pluginStore, getCollectionForType} = this
+      const options = {
+        store,
+        pluginStore,
+        overlayDrafts,
+        getUid,
+        addDocumentToCollection,
+        getCollectionForType
+      }
+
+      this.client.listen(`*[${filters.join(' && ')}]`).subscribe(event => {
+        handleListenerEvent(event, options, docs)
+      })
+    }
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  getCollectionForType(type, store) {
+    const {makeTypeName, getContentType} = store
+    const gqlTypeName = getGraphQLTypeName(type)
+    const typeName = normalizeTypeName(makeTypeName(gqlTypeName))
+    return getContentType(typeName)
   }
 
   addDocumentToCollection(doc, store) {
-    const {makeTypeName, getContentType} = store
+    const {overlayDrafts} = this.options
     const {_id, _type} = doc
-    const gqlTypeName = getGraphQLTypeName(_type)
-    const typeName = normalizeTypeName(makeTypeName(gqlTypeName))
-    const collection = getContentType(typeName)
+    const id = overlayDrafts ? unprefixDraftId(_id) : _id
+    const collection = this.getCollectionForType(_type, store)
 
     if (!collection) {
       console.warn(
         oneline`
-        [warn] Document with ID "%s" has type "%s", which is not declared
+        [sanity] Document with ID "%s" has type "%s", which is not declared
         as a document type in the GraphQL schema. Have you remembered to
         run \`sanity graphql deploy\` lately? Skipping document.`,
         _id,
@@ -228,11 +282,17 @@ class SanitySource {
       return
     }
 
-    collection.addNode({
-      $uid: this.getUid(_id),
-      id: _id,
-      ...doc
-    })
+    // Gridsome overrides `node.id` with `node._id` if present.
+    // This is scheduled for removal at 1.0, but for now we have to pass the non-draft
+    // id to make sure we actually update the same node as we were expecting to.
+    const newNode = {...doc, id, $uid: this.getUid(id), _id: id}
+    const existingNode = collection.getNodeById(id)
+
+    if (existingNode) {
+      collection.updateNode(newNode)
+    } else {
+      collection.addNode(newNode)
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -250,10 +310,6 @@ class SanitySource {
 
 function ucFirst(str) {
   return (str[0] || '').toUpperCase() + str.slice(1)
-}
-
-function getGraphQLTypeName(str) {
-  return startCase(str).replace(/\s+/g, '')
 }
 
 function rejectOnApiError() {
@@ -340,10 +396,6 @@ function makeNullable(typeNode) {
   }
 
   return typeNode
-}
-
-function normalizeTypeName(typeName) {
-  return typeName.replace(/^SanitySanity/, 'Sanity')
 }
 
 function sha1(value) {

@@ -1,7 +1,8 @@
+const {unprefixDraftId} = require('./draftHandlers')
+
 module.exports = function resolveReferences(obj, depth, maxDepth, context) {
-  const {store, getUid} = context
+  const {store, getUid, overlayDrafts} = context
   const {getNodeByUid} = store
-  const overlayDrafts = false // @todo
 
   if (Array.isArray(obj)) {
     return depth <= maxDepth
@@ -26,8 +27,4 @@ module.exports = function resolveReferences(obj, depth, maxDepth, context) {
     acc[key] = resolveReferences(obj[key], depth + 1, maxDepth, context)
     return acc
   }, initial)
-}
-
-function unprefixDraftId(id) {
-  return id.replace(/^drafts\./, '')
 }
