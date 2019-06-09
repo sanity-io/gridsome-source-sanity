@@ -24,8 +24,7 @@ class SanitySource {
       dataset: '',
       token: '',
       overlayDrafts: false,
-      watchMode: false,
-      routes: {}
+      watchMode: false
     }
   }
 
