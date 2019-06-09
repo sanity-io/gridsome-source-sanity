@@ -7,6 +7,7 @@ const split = require('split2')
 const through = require('through2')
 const oneline = require('oneline')
 const sanityClient = require('@sanity/client')
+const {version} = require('../package.json')
 const getRemoteGraphQLSchema = require('./remoteGraphQLSchema')
 const resolveReferences = require('./resolveReferences')
 
@@ -285,7 +286,7 @@ function removeSystemDocuments() {
 
 function getDocumentStream(url, token) {
   const auth = token ? {Authorization: `Bearer ${token}`} : {}
-  const userAgent = {'User-Agent': 'gridsome-source-sanity'}
+  const userAgent = {'User-Agent': `gridsome-source-sanity@${version}`}
   const headers = {
     ...userAgent,
     ...auth
