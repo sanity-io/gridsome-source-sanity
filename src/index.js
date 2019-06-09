@@ -8,6 +8,7 @@ const through = require('through2')
 const oneline = require('oneline')
 const sanityClient = require('@sanity/client')
 const getRemoteGraphQLSchema = require('./remoteGraphQLSchema')
+const resolveReferences = require('./resolveReferences')
 
 const gqlScalarTypes = ['String', 'Int', 'Float', 'Boolean', 'ID']
 
@@ -32,6 +33,7 @@ class SanitySource {
 
     const {projectId, dataset, token, useCdn} = options
 
+    this.getUid = this.getUid.bind(this)
     this.uidPrefix = sha1([projectId, dataset, token].join('-'))
     this.client = sanityClient({
       apiVersion: '1',
@@ -50,6 +52,13 @@ class SanitySource {
 
   declareContentTypes(store, remoteSchema) {
     const {addSchemaTypes} = store
+
+    addSchemaTypes(`
+      input SanityResolveReferencesConfiguration {
+        maxDepth: Int!
+      }
+    `)
+
     addSchemaTypes(
       remoteSchema.definitions
         .filter(def => ['ObjectTypeDefinition', 'UnionTypeDefinition'].includes(def.kind))
@@ -121,7 +130,18 @@ class SanitySource {
       .forEach(jsonField => {
         fields[`_raw${ucFirst(jsonField.aliasFor)}`] = {
           type: 'JSON',
-          resolve: source => source[jsonField.aliasFor]
+          args: {
+            resolveReferences: {
+              type: 'SanityResolveReferencesConfiguration'
+            }
+          },
+          resolve: (source, args, context) => {
+            const resolveContext = {store: context.store, getUid: this.getUid}
+            const value = source[jsonField.aliasFor]
+            return args.resolveReferences
+              ? resolveReferences(value, 0, args.resolveReferences.maxDepth, resolveContext)
+              : value
+          }
         }
       })
 
@@ -167,7 +187,7 @@ class SanitySource {
 
   maybeResolveReference(item, store) {
     if (item && typeof item._ref === 'string') {
-      return store.getNodeByUid(this.getUid(item._ref))
+      return store.getNodeByUid(this.etUid(item._ref))
     }
 
     return item
