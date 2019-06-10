@@ -24,7 +24,8 @@ class SanitySource {
       dataset: '',
       token: '',
       overlayDrafts: false,
-      watchMode: false
+      watchMode: false,
+      routes: {}
     }
   }
 
@@ -82,7 +83,7 @@ class SanitySource {
 
   // eslint-disable-next-line class-methods-use-this
   createObjectType(graphqlType, store) {
-    const {overlayDrafts} = this.options
+    const {overlayDrafts, routes} = this.options
     const {makeTypeName, addContentType, schema} = store
     const {createObjectType} = schema
     const graphqlName = graphqlType.name.value
@@ -157,7 +158,10 @@ class SanitySource {
       })
 
     if (isDocumentType) {
-      addContentType(typeName)
+      addContentType({
+        typeName,
+        route: routes[typeName]
+      })
     }
 
     return createObjectType({
