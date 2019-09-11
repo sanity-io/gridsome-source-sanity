@@ -1,6 +1,6 @@
 # gridsome-source-sanity
 
-[Sanity.io](https://www.sanity.io/) source for Gridsome.
+[Sanity.io](https://www.sanity.io/) source for Gridsome. Requires Gridsome 0.7 or above.
 
 ## Table of contents
 

@@ -32,6 +32,9 @@
     "eslint-config-sanity": "^0.140.0",
     "prettier": "^1.16.4"
   },
+  "peerDependencies": {
+    "gridsome": ">=0.7.0"
+  },
   "prettier": {
     "semi": false,
     "printWidth": 100,
