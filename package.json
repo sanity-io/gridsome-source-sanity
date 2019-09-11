@@ -1,6 +1,6 @@
 {
   "name": "gridsome-source-sanity",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Sanity.io source for Gridsome",
   "main": "src/index.js",
   "scripts": {
