@@ -62,7 +62,7 @@ module.exports = {
 
 ## Preview of unpublished content
 
-Sometimes you might be working on some new content that is not yet published, which you want to make sure looks alright within your Gatsby site. By setting the `overlayDrafts` setting to `true`, the draft versions will as the option says "overlay" the regular document. In terms of Gatsby nodes, it will _replace_ the published document with the draft.
+Sometimes you might be working on some new content that is not yet published, which you want to make sure looks alright within your Gridsome site. By setting the `overlayDrafts` setting to `true`, the draft versions will as the option says "overlay" the regular document. In terms of Gridsome nodes, it will _replace_ the published document with the draft.
 
 Keep in mind that drafts do not have to conform to any validation rules, so your frontend will usually want to double-check all nested properties before attempting to use them.
 
@@ -90,4 +90,4 @@ Rich text in Sanity is usually represented as [Portable Text](https://www.portab
 
 These data structures can be deep and a chore to query (specifying all the possible fields). As [noted above](#raw-fields), there is a "raw" alternative available for these fields which is usually what you'll want to use.
 
-You can install [sanity-blocks-vue-component](https://github.com/rdunk/sanity-blocks-vue-component) from npm and use it in your Gatsby project to serialize Portable Text. It lets you use your own Vue components to override defaults and render custom content types. [Learn more about Portable Text in our documentation](https://www.sanity.io/docs/content-studio/what-you-need-to-know-about-block-text).
+You can install [sanity-blocks-vue-component](https://github.com/rdunk/sanity-blocks-vue-component) from npm and use it in your Gridsome project to serialize Portable Text. It lets you use your own Vue components to override defaults and render custom content types. [Learn more about Portable Text in our documentation](https://www.sanity.io/docs/content-studio/what-you-need-to-know-about-block-text).
