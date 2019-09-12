@@ -2,17 +2,10 @@ const debug = require('./debug')
 const {unprefixId, isDraftId} = require('./draftHandlers')
 
 module.exports = function handleListenerEvent(event, options, docs) {
-  const {
-    store,
-    pluginStore,
-    getUid,
-    overlayDrafts,
-    addDocumentToCollection,
-    getCollectionForType
-  } = options
+  const {store, getUid, overlayDrafts, addDocumentToCollection, getCollectionForType} = options
 
   const uid = getUid(unprefixId(event.documentId))
-  const current = pluginStore.getNodeByUid(uid)
+  const current = store.getNodeByUid(uid)
   const collection = current && getCollectionForType(current._type, store)
   const published = docs.published.get(unprefixId(event.documentId))
   const touchedIsDraft = isDraftId(event.documentId)

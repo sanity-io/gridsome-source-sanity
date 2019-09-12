@@ -6,12 +6,12 @@ const pumpIt = require('pump')
 const split = require('split2')
 const through = require('through2')
 const oneline = require('oneline')
+const {startCase} = require('lodash')
 const sanityClient = require('@sanity/client')
 const {version} = require('../package.json')
 const resolveReferences = require('./resolveReferences')
 const handleListenerEvent = require('./handleListenerEvent')
 const getRemoteGraphQLSchema = require('./remoteGraphQLSchema')
-const {getGraphQLTypeName, normalizeTypeName} = require('./typeNames')
 const {extractDrafts, removeDrafts, unprefixDraftId} = require('./draftHandlers')
 
 const gqlScalarTypes = ['String', 'Int', 'Float', 'Boolean', 'ID']
@@ -24,15 +24,12 @@ class SanitySource {
       dataset: '',
       token: '',
       overlayDrafts: false,
-      watchMode: false,
-      routes: {}
+      watchMode: false
     }
   }
 
   constructor(api, options) {
     this.options = options
-    this.pluginStore = api.store
-    this.typesIndex = {}
 
     const {projectId, dataset, token, overlayDrafts} = options
 
@@ -61,6 +58,10 @@ class SanitySource {
     })
   }
 
+  makeTypeName(originalName) {
+    return `${this.options.typeName}${originalName}`.replace(/^SanitySanity/, 'Sanity')
+  }
+
   declareContentTypes(store, remoteSchema) {
     const {addSchemaTypes} = store
 
@@ -83,11 +84,11 @@ class SanitySource {
 
   // eslint-disable-next-line class-methods-use-this
   createObjectType(graphqlType, store) {
-    const {overlayDrafts, routes} = this.options
-    const {makeTypeName, addContentType, schema} = store
+    const {overlayDrafts} = this.options
+    const {addCollection, schema} = store
     const {createObjectType} = schema
     const graphqlName = graphqlType.name.value
-    const typeName = normalizeTypeName(makeTypeName(graphqlName))
+    const typeName = this.makeTypeName(graphqlName)
     const isDocumentType = graphqlType.interfaces.some(iface => iface.name.value === 'Document')
 
     const fields = isDocumentType ? {id: {type: 'ID!'}} : {}
@@ -119,7 +120,7 @@ class SanitySource {
         }
 
         // Maps to one of our own types
-        const targetName = normalizeTypeName(makeTypeName(unwrappedName))
+        const targetName = this.makeTypeName(unwrappedName)
         fields[field.name.value] = {
           type: isList ? `[${targetName}]` : targetName,
           resolve: (source, args, context) => {
@@ -158,9 +159,9 @@ class SanitySource {
       })
 
     if (isDocumentType) {
-      addContentType({
+      addCollection({
         typeName,
-        route: routes[typeName]
+        dateField: '_createdAt'
       })
     }
 
@@ -173,10 +174,10 @@ class SanitySource {
 
   // eslint-disable-next-line class-methods-use-this
   createUnionType(graphqlType, store, gqlSchema) {
-    const {makeTypeName, schema} = store
+    const {schema} = store
     const {createUnionType} = schema
     const graphqlName = graphqlType.name.value
-    const typeName = normalizeTypeName(makeTypeName(graphqlName))
+    const typeName = this.makeTypeName(graphqlName)
     const allDocuments = graphqlType.types.every(type => {
       const target = gqlSchema.definitions.find(
         def => def.name && def.name.value === type.name.value
@@ -184,16 +185,14 @@ class SanitySource {
       return target && target.interfaces.some(iface => iface.name.value === 'Document')
     })
 
-    const targetTypeNames = graphqlType.types.map(type =>
-      normalizeTypeName(makeTypeName(type.name.value))
-    )
+    const targetTypeNames = graphqlType.types.map(type => this.makeTypeName(type.name.value))
 
     return createUnionType({
       name: typeName,
       interfaces: allDocuments ? ['Node'] : [],
       types: targetTypeNames,
       resolveType: (data, context, info) => {
-        const target = data._type && normalizeTypeName(makeTypeName(data._type))
+        const target = data._type && this.makeTypeName(data._type)
         const type = target && info.schema.getType(target)
         return type || null
       }
@@ -243,10 +242,9 @@ class SanitySource {
       }
 
       const docs = {drafts, published}
-      const {pluginStore, getCollectionForType} = this
+      const {getCollectionForType} = this
       const options = {
         store,
-        pluginStore,
         overlayDrafts,
         getUid,
         addDocumentToCollection,
@@ -261,10 +259,10 @@ class SanitySource {
 
   // eslint-disable-next-line class-methods-use-this
   getCollectionForType(type, store) {
-    const {makeTypeName, getContentType} = store
+    const {getCollection} = store
     const gqlTypeName = getGraphQLTypeName(type)
-    const typeName = normalizeTypeName(makeTypeName(gqlTypeName))
-    return getContentType(typeName)
+    const typeName = this.makeTypeName(gqlTypeName)
+    return getCollection(typeName)
   }
 
   addDocumentToCollection(doc, store) {
@@ -408,6 +406,10 @@ function sha1(value) {
     .digest('base64')
     .replace(/[^A-Za-z0-9]/g, '')
     .slice(0, 10)
+}
+
+function getGraphQLTypeName(str) {
+  return startCase(str).replace(/\s+/g, '')
 }
 
 module.exports = SanitySource
