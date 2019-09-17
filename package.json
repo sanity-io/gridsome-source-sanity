@@ -12,7 +12,12 @@
   "engines": {
     "node": ">=8.0.0"
   },
-  "keywords": [],
+  "keywords": [
+    "gridsome",
+    "gridsome-plugin",
+    "gridsome-source",
+    "sanity"
+  ],
   "author": "Sanity.io <hello@sanity.io>",
   "license": "MIT",
   "dependencies": {
