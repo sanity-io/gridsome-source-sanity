@@ -192,7 +192,8 @@ class SanitySource {
       interfaces: allDocuments ? ['Node'] : [],
       types: targetTypeNames,
       resolveType: (data, context, info) => {
-        const target = data._type && this.makeTypeName(data._type)
+        const gqlTypeName = data._type && getGraphQLTypeName(data._type)
+        const target = gqlTypeName && this.makeTypeName(gqlTypeName)
         const type = target && info.schema.getType(target)
         return type || null
       }
