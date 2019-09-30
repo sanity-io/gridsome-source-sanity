@@ -342,7 +342,7 @@ function removeSystemDocuments() {
   })
 }
 
-function getDocumentStream(url, token) {
+async function getDocumentStream(url, token) {
   const auth = token ? {Authorization: `Bearer ${token}`} : {}
   const userAgent = {'User-Agent': `gridsome-source-sanity@${version}`}
   const headers = {
@@ -350,12 +350,23 @@ function getDocumentStream(url, token) {
     ...auth
   }
 
-  return axios({
-    method: 'get',
-    responseType: 'stream',
-    url,
-    headers
-  }).then(res => res.data)
+  try {
+    const response = await axios({
+      method: 'get',
+      responseType: 'stream',
+      maxRedirects: 0,
+      url,
+      headers
+    })
+
+    return response.data
+  } catch (err) {
+    if (err.response.status === 404) {
+      err.message = `${err.message} - double-check project ID and dataset configuration`
+    }
+
+    throw err
+  }
 }
 
 function getJsonAliasDirective(field) {
