@@ -111,8 +111,8 @@ class SanitySource {
           return
         }
 
-        // Remap DateTime to Date
-        if (unwrappedName === 'DateTime') {
+        // Remap Date/DateTime to Date
+        if (unwrappedName === 'DateTime' || unwrappedName === 'Date') {
           fields[field.name.value] = {
             type: isList ? '[Date]' : 'Date'
           }
