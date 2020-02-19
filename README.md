@@ -42,7 +42,11 @@ module.exports = {
         // or `overlayDrafts` is set to true
         token: '<tokenWithReadRights>',
         overlayDrafts: false,
-        watchMode: false
+        watchMode: false,
+
+        // If the Sanity GraphQL API was deployed using `--tag <name>`,
+        // use `graphqlTag` to specify the tag name. Defaults to `default`.
+        graphqlTag: 'default'
       }
     }
   ]
@@ -51,14 +55,15 @@ module.exports = {
 
 ## Options
 
-| Options       | Type    | Default  | Description                                                                                                                                                                  |
-| ------------- | ------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| projectId     | string  |          | **[required]** Your Sanity project's ID                                                                                                                                      |
-| dataset       | string  |          | **[required]** The dataset to fetch from                                                                                                                                     |
-| token         | string  |          | Authentication token for fetching data from private datasets, or when using `overlayDrafts` [Learn more](https://www.sanity.io/docs/http-auth)                               |
-| overlayDrafts | boolean | `false`  | Set to `true` in order for drafts to replace their published version. By default, drafts will be skipped.                                                                    |
-| watchMode     | boolean | `false`  | Set to `true` to keep a listener open and update with the latest changes in realtime. If you enable `overlayDrafts`, changes will be reflected almost down to each keypress. |
-| typeName      | string  | `Sanity` | Prefix for schema types and queries.                                                                                                                                         |
+| Options       | Type    | Default   | Description                                                                                                                                                                  |
+| ------------- | ------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| projectId     | string  |           | **[required]** Your Sanity project's ID                                                                                                                                      |
+| dataset       | string  |           | **[required]** The dataset to fetch from                                                                                                                                     |
+| token         | string  |           | Authentication token for fetching data from private datasets, or when using `overlayDrafts` [Learn more](https://www.sanity.io/docs/http-auth)                               |
+| graphqlTag    | string  | `default` | If the Sanity GraphQL API was deployed using `--tag <name>`, use this to specify the tag name.                                                                               |
+| overlayDrafts | boolean | `false`   | Set to `true` in order for drafts to replace their published version. By default, drafts will be skipped.                                                                    |
+| watchMode     | boolean | `false`   | Set to `true` to keep a listener open and update with the latest changes in realtime. If you enable `overlayDrafts`, changes will be reflected almost down to each keypress. |
+| typeName      | string  | `Sanity`  | Prefix for schema types and queries.                                                                                                                                         |
 
 ## Preview of unpublished content
 

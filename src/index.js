@@ -23,6 +23,7 @@ class SanitySource {
       projectId: '',
       dataset: '',
       token: '',
+      graphqlTag: 'default',
       overlayDrafts: false,
       watchMode: false
     }
@@ -31,7 +32,7 @@ class SanitySource {
   constructor(api, options) {
     this.options = options
 
-    const {projectId, dataset, token, overlayDrafts} = options
+    const {projectId, dataset, token, overlayDrafts, graphqlTag} = options
 
     if (overlayDrafts && !token) {
       console.warn('[sanity] `overlayDrafts` set to true, but no `token` specified!')
@@ -52,7 +53,7 @@ class SanitySource {
     })
 
     api.loadSource(async store => {
-      const remoteSchema = await getRemoteGraphQLSchema(this.client)
+      const remoteSchema = await getRemoteGraphQLSchema(this.client, graphqlTag)
       await this.declareContentTypes(store, remoteSchema)
       await this.getDocuments(store)
     })
