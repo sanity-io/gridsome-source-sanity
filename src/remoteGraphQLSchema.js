@@ -1,14 +1,13 @@
 const {parse} = require('graphql')
 
-module.exports = async client => {
-  const graphqlApi = 'default'
+module.exports = async (client, graphqlTag) => {
   const config = client.config()
   const {dataset} = config
 
   let api
   try {
     api = await client.request({
-      url: `/apis/graphql/${dataset}/${graphqlApi}`,
+      url: `/apis/graphql/${dataset}/${graphqlTag}`,
       headers: {
         Accept: 'application/graphql'
       }
