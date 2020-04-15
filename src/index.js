@@ -1,18 +1,18 @@
 /* eslint-disable no-console */
 const crypto = require('crypto')
-const {valueFromASTUntyped} = require('graphql')
+const { valueFromASTUntyped } = require('graphql')
 const axios = require('axios')
 const pumpIt = require('pump')
 const split = require('split2')
 const through = require('through2')
 const oneline = require('oneline')
-const {startCase} = require('lodash')
+const { startCase } = require('lodash')
 const sanityClient = require('@sanity/client')
-const {version} = require('../package.json')
+const { version } = require('../package.json')
 const resolveReferences = require('./resolveReferences')
 const handleListenerEvent = require('./handleListenerEvent')
 const getRemoteGraphQLSchema = require('./remoteGraphQLSchema')
-const {extractDrafts, removeDrafts, unprefixDraftId} = require('./draftHandlers')
+const { extractDrafts, removeDrafts, unprefixDraftId } = require('./draftHandlers')
 
 const gqlScalarTypes = ['String', 'Int', 'Float', 'Boolean', 'ID']
 
@@ -32,7 +32,7 @@ class SanitySource {
   constructor(api, options) {
     this.options = options
 
-    const {projectId, dataset, token, overlayDrafts, graphqlTag} = options
+    const { projectId, dataset, token, overlayDrafts, graphqlTag } = options
 
     if (overlayDrafts && !token) {
       console.warn('[sanity] `overlayDrafts` set to true, but no `token` specified!')
@@ -64,7 +64,7 @@ class SanitySource {
   }
 
   declareContentTypes(store, remoteSchema) {
-    const {addSchemaTypes} = store
+    const { addSchemaTypes } = store
 
     addSchemaTypes(`
       input SanityResolveReferencesConfiguration {
@@ -85,19 +85,19 @@ class SanitySource {
 
   // eslint-disable-next-line class-methods-use-this
   createObjectType(graphqlType, store) {
-    const {overlayDrafts} = this.options
-    const {addCollection, schema} = store
-    const {createObjectType} = schema
+    const { overlayDrafts } = this.options
+    const { addCollection, schema } = store
+    const { createObjectType } = schema
     const graphqlName = graphqlType.name.value
     const typeName = this.makeTypeName(graphqlName)
     const isDocumentType = graphqlType.interfaces.some(iface => iface.name.value === 'Document')
 
-    const fields = isDocumentType ? {id: {type: 'ID!'}} : {}
+    const fields = isDocumentType ? { id: { type: 'ID!' } } : {}
 
     // Regular fields
     graphqlType.fields
       .filter(field => !getJsonAliasDirective(field))
-      .map(field => ({...field, unwrappedType: unwrapType(field.type)}))
+      .map(field => ({ ...field, unwrappedType: unwrapType(field.type) }))
       .forEach(field => {
         const unwrappedName = field.unwrappedType.name.value
         const unwrapped = makeNullable(field)
@@ -142,6 +142,12 @@ class SanitySource {
       .map(getJsonAliasDirective)
       .filter(Boolean)
       .forEach(jsonField => {
+        // Plain text field
+        fields[jsonField.aliasFor] = {
+          type: "String",
+          resolve: (source) => toPlainText(source[jsonField.aliasFor])
+        }
+
         fields[`_raw${ucFirst(jsonField.aliasFor)}`] = {
           type: 'JSON',
           args: {
@@ -150,7 +156,7 @@ class SanitySource {
             }
           },
           resolve: (source, args, context) => {
-            const resolveContext = {store: context.store, getUid: this.getUid, overlayDrafts}
+            const resolveContext = { store: context.store, getUid: this.getUid, overlayDrafts }
             const value = source[jsonField.aliasFor]
             return args.resolveReferences
               ? resolveReferences(value, 0, args.resolveReferences.maxDepth, resolveContext)
@@ -175,8 +181,8 @@ class SanitySource {
 
   // eslint-disable-next-line class-methods-use-this
   createUnionType(graphqlType, store, gqlSchema) {
-    const {schema} = store
-    const {createUnionType} = schema
+    const { schema } = store
+    const { createUnionType } = schema
     const graphqlName = graphqlType.name.value
     const typeName = this.makeTypeName(graphqlName)
     const allDocuments = graphqlType.types.every(type => {
@@ -210,9 +216,9 @@ class SanitySource {
   }
 
   async getDocuments(store) {
-    const {getUid, addDocumentToCollection} = this
-    const {overlayDrafts, watchMode} = this.options
-    const {dataset, token} = this.client.config()
+    const { getUid, addDocumentToCollection } = this
+    const { overlayDrafts, watchMode } = this.options
+    const { dataset, token } = this.client.config()
 
     const url = this.client.getUrl(`/data/export/${dataset}`)
     const inputStream = await getDocumentStream(url, token)
@@ -243,8 +249,8 @@ class SanitySource {
         filters.push('!(_id in path("drafts.**"))')
       }
 
-      const docs = {drafts, published}
-      const {getCollectionForType} = this
+      const docs = { drafts, published }
+      const { getCollectionForType } = this
       const options = {
         store,
         overlayDrafts,
@@ -261,15 +267,15 @@ class SanitySource {
 
   // eslint-disable-next-line class-methods-use-this
   getCollectionForType(type, store) {
-    const {getCollection} = store
+    const { getCollection } = store
     const gqlTypeName = getGraphQLTypeName(type)
     const typeName = this.makeTypeName(gqlTypeName)
     return getCollection(typeName)
   }
 
   addDocumentToCollection(doc, store) {
-    const {overlayDrafts} = this.options
-    const {_id, _type} = doc
+    const { overlayDrafts } = this.options
+    const { _id, _type } = doc
     const id = overlayDrafts ? unprefixDraftId(_id) : _id
     const collection = this.getCollectionForType(_type, store)
 
@@ -288,7 +294,7 @@ class SanitySource {
     // Gridsome overrides `node.id` with `node._id` if present.
     // This is scheduled for removal at 1.0, but for now we have to pass the non-draft
     // id to make sure we actually update the same node as we were expecting to.
-    const newNode = {...doc, id, $uid: this.getUid(id), _id: id}
+    const newNode = { ...doc, id, $uid: this.getUid(id), _id: id }
     const existingNode = collection.getNodeById(id)
 
     if (existingNode) {
@@ -316,7 +322,7 @@ function ucFirst(str) {
 }
 
 function rejectOnApiError() {
-  return through.obj(function(sanityDoc, string, callback) {
+  return through.obj(function (sanityDoc, string, callback) {
     const doc = sanityDoc
     if (doc._id && doc._type) {
       callback(null, doc)
@@ -334,7 +340,7 @@ function rejectOnApiError() {
 }
 
 function removeSystemDocuments() {
-  return through.obj(function(doc, string, callback) {
+  return through.obj(function (doc, string, callback) {
     if (doc && doc._id && doc._id.startsWith('_.')) {
       return callback()
     }
@@ -344,8 +350,8 @@ function removeSystemDocuments() {
 }
 
 async function getDocumentStream(url, token) {
-  const auth = token ? {Authorization: `Bearer ${token}`} : {}
-  const userAgent = {'User-Agent': `gridsome-source-sanity@${version}`}
+  const auth = token ? { Authorization: `Bearer ${token}` } : {}
+  const userAgent = { 'User-Agent': `gridsome-source-sanity@${version}` }
   const headers = {
     ...userAgent,
     ...auth
@@ -406,7 +412,7 @@ function makeNullable(typeNode) {
   if (typeNode.kind === 'NonNullType') {
     return makeNullable(typeNode.type)
   } else if (typeNode.kind === 'ListType') {
-    return {...typeNode, type: makeNullable(typeNode.type)}
+    return { ...typeNode, type: makeNullable(typeNode.type) }
   }
 
   return typeNode
@@ -424,5 +430,23 @@ function sha1(value) {
 function getGraphQLTypeName(str) {
   return startCase(str).replace(/\s+/g, '')
 }
+
+function toPlainText(blocks = []) {
+  return blocks
+    // loop through each block
+    .map(block => {
+      // if it's not a text block with children, 
+      // return nothing
+      if (block._type !== 'block' || !block.children) {
+        return ''
+      }
+      // loop through the children spans, and join the
+      // text strings
+      return block.children.map(child => child.text).join('')
+    })
+    // join the parapgraphs leaving split by two linebreaks
+    .join('\n\n')
+}
+
 
 module.exports = SanitySource
