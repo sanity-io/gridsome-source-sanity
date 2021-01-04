@@ -57,6 +57,14 @@ class SanitySource {
       await this.declareContentTypes(store, remoteSchema)
       await this.getDocuments(store)
     })
+
+    api.createSchema(({ addSchemaTypes }) => {
+      addSchemaTypes(`
+        type SanityDocument implements Node @infer {
+          id: ID!
+        }
+      `)
+    })
   }
 
   makeTypeName(originalName) {
