@@ -21,29 +21,31 @@
   "author": "Sanity.io <hello@sanity.io>",
   "license": "MIT",
   "dependencies": {
-    "@sanity/client": "^0.142.0",
-    "axios": "^0.19.0",
-    "debug": "^4.1.1",
-    "graphql": "^14.5.4",
-    "lodash": "^4.17.15",
+    "@sanity/client": "^2.19.0",
+    "axios": "^0.22.0",
+    "debug": "^4.3.2",
+    "graphql": "^15.6.1",
+    "lodash": "^4.17.21",
     "oneline": "^1.0.3",
     "pump": "^3.0.0",
-    "split2": "^3.1.1",
+    "split2": "^3.2.2",
     "through2": "^3.0.1"
   },
   "devDependencies": {
-    "eslint": "^6.3.0",
-    "eslint-config-prettier": "^6.3.0",
-    "eslint-config-sanity": "^0.142.0",
-    "prettier": "^1.16.4"
+    "eslint": "^7.32.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-config-sanity": "^5.1.0",
+    "prettier": "^2.4.1"
   },
   "peerDependencies": {
     "gridsome": ">=0.7.1"
   },
   "prettier": {
+    "useTabs": false,
+    "singleQuote": true,
+    "trailingComma": "none",
     "semi": false,
     "printWidth": 100,
-    "bracketSpacing": false,
-    "singleQuote": true
+    "bracketSpacing": false
   }
 }
