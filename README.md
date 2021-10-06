@@ -42,7 +42,8 @@ module.exports = {
         // or `overlayDrafts` is set to true
         token: '<tokenWithReadRights>',
         overlayDrafts: false,
-        watchMode: false,
+        // Only enable real-time changes in development
+        watchMode: process.env.NODE_ENV === "development",
 
         // If the Sanity GraphQL API was deployed using `--tag <name>`,
         // use `graphqlTag` to specify the tag name. Defaults to `default`.
@@ -62,7 +63,7 @@ module.exports = {
 | token         | string  |           | Authentication token for fetching data from private datasets, or when using `overlayDrafts` [Learn more](https://www.sanity.io/docs/http-auth)                               |
 | graphqlTag    | string  | `default` | If the Sanity GraphQL API was deployed using `--tag <name>`, use this to specify the tag name.                                                                               |
 | overlayDrafts | boolean | `false`   | Set to `true` in order for drafts to replace their published version. By default, drafts will be skipped.                                                                    |
-| watchMode     | boolean | `false`   | Set to `true` to keep a listener open and update with the latest changes in realtime. If you enable `overlayDrafts`, changes will be reflected almost down to each keypress. |
+| watchMode     | boolean | `false`   | Set to `true` to keep a listener open and update with the latest changes in realtime. If you enable `overlayDrafts`, changes will be reflected almost down to each keypress. This option shouldn't be enabled during build or else the listener will prevent it from being completed. |
 | typeName      | string  | `Sanity`  | Prefix for schema types and queries.                                                                                                                                         |
 
 ## Preview of unpublished content
