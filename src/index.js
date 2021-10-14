@@ -32,7 +32,7 @@ class SanitySource {
   constructor(api, options) {
     this.options = options
 
-    const {projectId, dataset, token, overlayDrafts, graphqlTag} = options
+    const {projectId, dataset, token, overlayDrafts, graphqlTag, apiVersion} = options
 
     if (overlayDrafts && !token) {
       console.warn('[sanity] `overlayDrafts` set to true, but no `token` specified!')
@@ -45,7 +45,7 @@ class SanitySource {
 
     this.uidPrefix = sha1([projectId, dataset, token].join('-'))
     this.client = sanityClient({
-      apiVersion: '1',
+      apiVersion,
       useCdn: false,
       projectId,
       dataset,
