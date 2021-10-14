@@ -44,6 +44,9 @@ module.exports = {
         overlayDrafts: false,
         // Only enable real-time changes in development
         watchMode: process.env.NODE_ENV === "development",
+        // API Version has to be set to today's date for the latest features.
+        // See: https://sanity.io/help/js-client-api-version
+        apiVersion: '2021-10-14',
 
         // If the Sanity GraphQL API was deployed using `--tag <name>`,
         // use `graphqlTag` to specify the tag name. Defaults to `default`.
