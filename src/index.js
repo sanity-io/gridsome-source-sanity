@@ -32,7 +32,7 @@ class SanitySource {
   constructor(api, options) {
     this.options = options
 
-    const {projectId, dataset, token, overlayDrafts, graphqlTag, apiVersion} = options
+    const {projectId, dataset, token, overlayDrafts, graphqlTag, apiVersion = "2021-03-25"} = options
 
     if (overlayDrafts && !token) {
       console.warn('[sanity] `overlayDrafts` set to true, but no `token` specified!')
