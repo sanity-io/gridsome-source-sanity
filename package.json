@@ -21,8 +21,8 @@
   "author": "Sanity.io <hello@sanity.io>",
   "license": "MIT",
   "dependencies": {
-    "@sanity/client": "^2.19.0",
-    "axios": "^0.22.0",
+    "@sanity/client": "^6.15.5",
+    "axios": "^1.6.8",
     "debug": "^4.3.2",
     "graphql": "^15.6.1",
     "lodash": "^4.17.21",
